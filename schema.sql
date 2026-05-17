@@ -45,6 +45,9 @@ create table if not exists orders (
   q           integer      not null default 1,
   tot         numeric(10,2) not null,
   pag         text         not null default 'PIX',
+  parc        integer      not null default 1,
+  dtpag       date,
+  itens       jsonb,
   st          text         not null default 'Confirmado'
                            check (st in ('Pendente','Confirmado','Enviado','Entregue')),
   dt          date         not null default current_date,
@@ -56,6 +59,18 @@ create table if not exists transactions (
   tp          text         not null check (tp in ('receita','despesa')),
   ds          text         not null,
   vl          numeric(10,2) not null,
+  dt          date         not null default current_date,
+  created_at  timestamptz  not null default now()
+);
+
+create table if not exists solicitacoes (
+  id          integer      primary key,
+  nm          text         not null,
+  q           integer      not null default 1,
+  pr          numeric(10,2),
+  obs         text         not null default '',
+  st          text         not null default 'Pendente'
+                           check (st in ('Pendente','Solicitado','Recebido')),
   dt          date         not null default current_date,
   created_at  timestamptz  not null default now()
 );
@@ -75,6 +90,7 @@ alter table clients        enable row level security;
 alter table orders         enable row level security;
 alter table transactions   enable row level security;
 alter table store_settings enable row level security;
+alter table solicitacoes   enable row level security;
 
 -- Produtos
 create policy "products_anon_select"  on products for select using (true);
@@ -95,6 +111,9 @@ create policy "orders_auth_all"       on orders       for all to authenticated u
 
 -- Transações
 create policy "transactions_auth_all" on transactions for all to authenticated using (true) with check (true);
+
+-- Solicitações
+create policy "solicitacoes_auth_all" on solicitacoes for all to authenticated using (true) with check (true);
 
 -- ─── Dados iniciais — Produtos ────────────────────────────────────────
 insert into products (id, em, nm, cat, pr, pd, st, dt, img, description, feats) values
@@ -177,6 +196,26 @@ insert into store_settings (id, data) values (1, '{
     {"title": "Consultoria personalizada",   "desc": "Atendimento exclusivo grátis"}
   ]
 }'::jsonb) on conflict (id) do nothing;
+
+-- ─── MIGRAÇÃO — execute se o banco já existia antes ──────────────────
+-- (seguro rodar mesmo que as colunas/tabelas já existam)
+alter table orders add column if not exists parc  integer default 1;
+alter table orders add column if not exists dtpag date;
+alter table orders add column if not exists itens jsonb;
+
+create table if not exists solicitacoes (
+  id          integer      primary key,
+  nm          text         not null,
+  q           integer      not null default 1,
+  pr          numeric(10,2),
+  obs         text         not null default '',
+  st          text         not null default 'Pendente'
+                           check (st in ('Pendente','Solicitado','Recebido')),
+  dt          date         not null default current_date,
+  created_at  timestamptz  not null default now()
+);
+alter table solicitacoes enable row level security;
+create policy if not exists "solicitacoes_auth_all" on solicitacoes for all to authenticated using (true) with check (true);
 
 -- ─── IMPORTANTE ───────────────────────────────────────────────────────
 -- Após executar este schema, crie um usuário em:

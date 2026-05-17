@@ -14,8 +14,9 @@ const DB = {
   clis:  [],
   peds:  [],
   trans: [],
+  solics: [],
   cart: [],
-  nid: { p: 200, c: 200, ped: 2000, t: 200 },
+  nid: { p: 200, c: 200, ped: 2000, t: 200, s: 100 },
   settings: {
     banner:    'Frete <em>GRÁTIS</em> em compras acima de R$ 150 · Consultoria personalizada inclusa em cada pedido',
     whatsapp:  '5511999999999',
@@ -64,17 +65,19 @@ async function initDB() {
   if (!window._sbClient) return;
   _sbReady = true;
   const safe = async fn => { try { return await fn(); } catch(e) { console.warn('[initDB]', e.message); return null; } };
-  const [prods, clis, peds, trans, settings] = await Promise.all([
+  const [prods, clis, peds, trans, solics, settings] = await Promise.all([
     safe(() => SBProds.list()),
     safe(() => SBClis.list()),
     safe(() => SBPeds.list()),
     safe(() => SBTrans.list()),
+    safe(() => SBSolics.list()),
     safe(() => SBSettings.get())
   ]);
-  if (prods)    { DB.prods = prods; if (prods.length) DB.nid.p   = Math.max(...prods.map(x => x.id)) + 1; }
-  if (clis)     { DB.clis  = clis;  if (clis.length)  DB.nid.c   = Math.max(...clis.map(x => x.id))  + 1; }
-  if (peds)     { DB.peds  = peds;  if (peds.length)  DB.nid.ped = Math.max(...peds.map(x => x.id))  + 1; }
-  if (trans)    { DB.trans = trans; if (trans.length) DB.nid.t   = Math.max(...trans.map(x => x.id)) + 1; }
+  if (prods)    { DB.prods  = prods;  if (prods.length)  DB.nid.p   = Math.max(...prods.map(x => x.id))  + 1; }
+  if (clis)     { DB.clis   = clis;   if (clis.length)   DB.nid.c   = Math.max(...clis.map(x => x.id))   + 1; }
+  if (peds)     { DB.peds   = peds;   if (peds.length)   DB.nid.ped = Math.max(...peds.map(x => x.id))   + 1; }
+  if (trans)    { DB.trans  = trans;  if (trans.length)  DB.nid.t   = Math.max(...trans.map(x => x.id))  + 1; }
+  if (solics)   { DB.solics = solics; if (solics.length) DB.nid.s   = Math.max(...solics.map(x => x.id)) + 1; }
   if (settings) Object.assign(DB.settings, settings);
 }
 
@@ -104,12 +107,14 @@ function epage(id, el) {
   if (pg) pg.classList.add('on');
   if (el) el.classList.add('on');
   else document.querySelectorAll('.nav-link').forEach(l => { if (l.getAttribute('onclick')?.includes("'" + id + "'")) l.classList.add('on'); });
-  const tt = { dashboard: 'Dashboard', pedidos: 'Pedidos', nvenda: 'Nova Venda', estoque: 'Estoque', clientes: 'Clientes', financeiro: 'Financeiro', catalogo: 'Catálogo', relatorios: 'Relatórios', loja: 'Configurar Loja' };
+  const tt = { dashboard: 'Dashboard', receber: 'A Receber', solicita: 'Solicitações', nvenda: 'Nova Venda', estoque: 'Estoque', clientes: 'Clientes', financeiro: 'Financeiro', catalogo: 'Catálogo', relatorios: 'Relatórios', loja: 'Configurar Loja' };
   $('etitle').textContent = tt[id] || id;
   if (id === 'financeiro') rFin();
   if (id === 'relatorios') rRel();
   if (id === 'nvenda') rNV();
   if (id === 'loja') rLoja();
+  if (id === 'receber') rReceber();
+  if (id === 'solicita') rSolic();
 }
 
 function openMod(id) {
@@ -117,7 +122,7 @@ function openMod(id) {
     const s1 = $('mvc'), s2 = $('mvp');
     if (s1) s1.innerHTML = DB.clis.map(c => `<option value="${c.id}">${c.nm}</option>`).join('');
     if (s2) { s2.innerHTML = DB.prods.map(p => `<option value="${p.id}">${p.em} ${p.nm} — ${brl(p.pr)}</option>`).join(''); mvUpd(); }
-    if ($('mvdtpag') && !$('mvdtpag').value) $('mvdtpag').value = td();
+    if ($('mvdtpag')) $('mvdtpag').value = td();
     if ($('mvpg')) { $('mvpg').value = 'PIX'; mvPayChg('PIX'); }
     _mvCart = [];
     mvRenderCart();
@@ -129,16 +134,21 @@ function openMod(id) {
       DB.prods.filter(p => p.id !== currentId).map(p => `<option value="${p.id}">${p.em} ${p.nm}</option>`).join('');
   }
   $(id).classList.add('on');
+  document.body.style.overflow = 'hidden';
 }
 
-function closeMod(id) { $(id).classList.remove('on'); }
+function closeMod(id) {
+  $(id).classList.remove('on');
+  if (!document.querySelector('.modal.on')) document.body.style.overflow = '';
+}
 
 /* ── Render ERP ──────────────────────────────────── */
 function renderAll() {
   rMet();
   rDashRec();
   rDashLow();
-  rPeds();
+  rReceber();
+  rSolic();
   rEst();
   rClis();
   rKat();
@@ -171,18 +181,113 @@ function rDashLow() {
   $('dash-low').innerHTML = !low.length ? '<p class="small-note">✓ Todos os produtos OK</p>' : low.map(p => `<div class="lsi"><span>${p.em} ${p.nm}</span><span class="xb ${p.st === 0 ? 'xb-red' : 'xb-gold'}">${p.st} un.</span></div>`).join('');
 }
 
-function rPeds() {
-  $('ptt').innerHTML = [...DB.peds].reverse().map(p => {
+/* ── A Receber (vendas fiado) ────────────────────── */
+function rReceber() {
+  const el = $('rbtt');
+  if (!el) return;
+  const fiado = DB.peds.filter(p => p.pag === 'Fiado');
+  const total   = fiado.reduce((a, b) => a + b.tot, 0);
+  const vencido = fiado.filter(p => p.dtpag && p.dtpag < td()).reduce((a, b) => a + b.tot, 0);
+  if ($('r-total'))   $('r-total').textContent   = brl(total);
+  if ($('r-vencido')) $('r-vencido').textContent = brl(vencido);
+  if ($('r-qtd'))     $('r-qtd').textContent     = fiado.length;
+  if (!fiado.length) {
+    el.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px;color:#71717A;font-size:13px">✓ Nenhum valor pendente no momento</td></tr>';
+    return;
+  }
+  el.innerHTML = fiado.map(p => {
     const c = DB.clis.find(x => x.id === p.cid);
-    const dtpagStr = p.dtpag ? fdt(p.dtpag) : fdt(p.dt);
-    const dtpagClass = p.dtpag && p.dtpag > td() ? 'style="color:#D97706;font-weight:500"' : '';
-    return `<tr><td>#${p.id}</td><td>${c ? c.nm : '—'}</td><td>${fdt(p.dt)}</td><td>${p.prod} ×${p.q}</td><td>${brl(p.tot)}</td><td>${p.pag}</td><td ${dtpagClass}>${dtpagStr}</td><td><select class="fi small-select" onchange="updPS(${p.id}, this.value)">${['Pendente','Confirmado','Enviado','Entregue'].map(s => `<option ${s === p.st ? 'selected' : ''}>${s}</option>`).join('')}</select></td></tr>`;
+    const venc = p.dtpag && p.dtpag < td();
+    return `<tr>
+      <td>#${p.id}</td>
+      <td>${c ? c.nm : '—'}</td>
+      <td>${c ? c.tel : '—'}</td>
+      <td>${p.prod} ×${p.q}</td>
+      <td>${brl(p.tot)}</td>
+      <td ${venc ? 'style="color:#DC2626;font-weight:600"' : ''}>${p.dtpag ? fdt(p.dtpag) : fdt(p.dt)}${venc ? ' ⚠' : ''}</td>
+      <td class="table-actions"><button class="eb small" style="background:#18181B;color:#fff;border-color:#18181B" onclick="receberPed(${p.id})">✓ Receber</button></td>
+    </tr>`;
   }).join('');
+}
+
+function receberPed(id) {
+  const p = DB.peds.find(x => x.id === id);
+  if (!p) return;
+  const c = DB.clis.find(x => x.id === p.cid);
+  askConfirm(`Confirmar recebimento de ${brl(p.tot)}${c ? ' de ' + c.nm : ''}?\n\nUm lançamento de receita será registrado no financeiro.`, () => {
+    p.pag = 'Recebido';
+    p.st  = 'Entregue';
+    const t = { id: DB.nid.t++, tp: 'receita', ds: `Recebimento pedido #${p.id}`, vl: p.tot, dt: td() };
+    DB.trans.push(t);
+    rReceber();
+    rFin();
+    rMet();
+    rDashRec();
+    showToast('Pagamento registrado!');
+    sbSync(() => SBPeds.upsert(p));
+    sbSync(() => SBTrans.upsert(t));
+  });
+}
+
+/* ── Solicitações (pedidos para Mary Kay) ────────── */
+function rSolic() {
+  const el = $('stt');
+  if (!el) return;
+  const stColors = { Pendente: 'xb-gold', Solicitado: 'xb-blue', Recebido: 'xb-green' };
+  if (!DB.solics.length) {
+    el.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px;color:#71717A;font-size:13px">Nenhuma solicitação cadastrada. Clique em "+ Solicitação" para adicionar.</td></tr>';
+    return;
+  }
+  el.innerHTML = [...DB.solics].reverse().map(s => `
+    <tr>
+      <td>#${s.id}</td>
+      <td class="cell-strong">${s.nm}</td>
+      <td>${s.q} un.</td>
+      <td>${s.pr ? brl(s.pr) : '—'}</td>
+      <td>${s.obs || '—'}</td>
+      <td>${fdt(s.dt)}</td>
+      <td style="display:flex;gap:6px;align-items:center">
+        <select class="fi small-select" onchange="updSolicSt(${s.id}, this.value)">${['Pendente','Solicitado','Recebido'].map(x => `<option ${x === s.st ? 'selected' : ''}>${x}</option>`).join('')}</select>
+        <button class="eb small" onclick="delSolic(${s.id})">Excluir</button>
+      </td>
+    </tr>`).join('');
+}
+
+function updSolicSt(id, st) {
+  const s = DB.solics.find(x => x.id === id);
+  if (s) { s.st = st; rSolic(); showToast('Status atualizado'); sbSync(() => SBSolics.updateStatus(id, st)); }
+}
+
+function delSolic(id) {
+  askConfirm('Excluir esta solicitação?', () => {
+    DB.solics = DB.solics.filter(x => x.id !== id);
+    rSolic();
+    showToast('Solicitação removida');
+    sbSync(() => SBSolics.delete(id));
+  });
+}
+
+function saveSolic() {
+  const nm = $('sl-nm')?.value.trim();
+  if (!nm) { showToast('Informe o produto'); return; }
+  const q   = parseInt($('sl-q')?.value) || 1;
+  const pr  = parseFloat($('sl-pr')?.value) || null;
+  const obs = $('sl-obs')?.value.trim() || '';
+  const s   = { id: DB.nid.s++, nm, q, pr, obs, st: 'Pendente', dt: td() };
+  DB.solics.push(s);
+  rSolic();
+  closeMod('msolic');
+  $('sl-nm').value = '';
+  $('sl-q').value  = '1';
+  $('sl-pr').value = '';
+  $('sl-obs').value = '';
+  showToast('Solicitação criada!');
+  sbSync(() => SBSolics.upsert(s));
 }
 
 function updPS(id, st) {
   const p = DB.peds.find(x => x.id === id);
-  if (p) { p.st = st; rPeds(); rDashRec(); showToast('Status atualizado'); sbSync(() => SBPeds.updateStatus(id, st)); }
+  if (p) { p.st = st; rReceber(); rDashRec(); showToast('Status atualizado'); sbSync(() => SBPeds.updateStatus(id, st)); }
 }
 
 function rEst() {
@@ -212,6 +317,7 @@ function rClis() {
       <td>${c.pe}</td>
       <td>${brl(c.gasto)}</td>
       <td>${fdt(c.ult)}</td>
+      <td class="table-actions"><button class="eb small" onclick="editCli(${c.id})">Editar</button></td>
     </tr>`).join('');
 }
 
@@ -254,7 +360,7 @@ function rNV() {
   const vc = $('vc'), vp = $('vp');
   if (vc) vc.innerHTML = DB.clis.map(c => `<option value="${c.id}">${c.nm}</option>`).join('');
   if (vp) { vp.innerHTML = DB.prods.map(p => `<option value="${p.id}">${p.em} ${p.nm} — ${brl(p.pr)}</option>`).join(''); vUpd(); }
-  if ($('vdtpag') && !$('vdtpag').value) $('vdtpag').value = td();
+  if ($('vdtpag')) $('vdtpag').value = td();
   _nvCart = [];
   nvRenderCart();
   const vhj = $('vhj');
@@ -666,28 +772,123 @@ function delP(id) {
   sbSync(() => SBProds.delete(id));
 }
 
+function newCli() {
+  if ($('nc-id')) $('nc-id').value = '';
+  if ($('mc-title')) $('mc-title').textContent = 'Novo Cliente';
+  if ($('mc-save-btn')) $('mc-save-btn').textContent = 'Cadastrar cliente';
+  ['nc-nm', 'nc-tel', 'nc-em', 'nc-ci', 'nc-es'].forEach(fid => { if ($(fid)) $(fid).value = ''; });
+  if ($('nc-an')) $('nc-an').value = '';
+  openMod('mc');
+}
+
+function editCli(id) {
+  const c = DB.clis.find(x => x.id === id);
+  if (!c) return;
+  if ($('nc-id')) $('nc-id').value = c.id;
+  if ($('nc-nm')) $('nc-nm').value = c.nm;
+  if ($('nc-tel')) $('nc-tel').value = c.tel || '';
+  if ($('nc-em')) $('nc-em').value = c.em || '';
+  if ($('nc-ci')) $('nc-ci').value = c.ci || '';
+  if ($('nc-es')) $('nc-es').value = c.es || '';
+  if ($('nc-an')) $('nc-an').value = c.an || '';
+  if ($('nc-pe')) $('nc-pe').value = c.pe || 'Normal';
+  if ($('mc-title')) $('mc-title').textContent = 'Editar Cliente';
+  if ($('mc-save-btn')) $('mc-save-btn').textContent = 'Salvar alterações';
+  openMod('mc');
+}
+
 function saveCli() {
-  const o = {
-    id: DB.nid.c++,
-    nm: $('nc-nm').value,
-    tel: $('nc-tel').value,
-    em: $('nc-em').value,
-    ci: $('nc-ci').value,
-    es: $('nc-es').value,
-    an: $('nc-an').value,
-    pe: $('nc-pe').value,
-    gasto: 0,
-    ult: ''
+  const eid = $('nc-id')?.value;
+  const nm  = $('nc-nm').value.trim();
+  if (!nm) { showToast('Informe o nome'); return; }
+  const fields = {
+    nm, tel: $('nc-tel').value, em: $('nc-em').value,
+    ci: $('nc-ci').value, es: $('nc-es').value,
+    an: $('nc-an').value, pe: $('nc-pe').value
   };
-  if (!o.nm) { showToast('Informe o nome'); return; }
-  DB.clis.push(o);
+  if (eid) {
+    const c = DB.clis.find(x => x.id === parseInt(eid));
+    if (c) { Object.assign(c, fields); sbSync(() => SBClis.upsert({ ...c })); }
+  } else {
+    const c = { id: DB.nid.c++, ...fields, gasto: 0, ult: '' };
+    DB.clis.push(c);
+    sbSync(() => SBClis.upsert(c));
+  }
   rClis();
   rNV();
   closeMod('mc');
-  showToast('Cliente cadastrado');
-  sbSync(() => SBClis.upsert(o));
-  ['nc-nm', 'nc-tel', 'nc-em', 'nc-ci', 'nc-es'].forEach(fid => { if ($(fid)) $(fid).value = ''; });
-  if ($('nc-an')) $('nc-an').value = '';
+  showToast(eid ? 'Cliente atualizado' : 'Cliente cadastrado');
+}
+
+function editPed(id) {
+  const p = DB.peds.find(x => x.id === id);
+  if (!p) return;
+  if ($('med-id')) $('med-id').value = p.id;
+  const sel = $('med-c');
+  if (sel) sel.innerHTML = DB.clis.map(c => `<option value="${c.id}"${c.id === p.cid ? ' selected' : ''}>${c.nm}</option>`).join('');
+  const pagBase = p.pag ? p.pag.replace(/\s+\d+×$/, '') : 'PIX';
+  if ($('med-pg')) $('med-pg').value = pagBase;
+  if ($('med-parc')) $('med-parc').value = p.parc || 1;
+  if ($('med-dtpag')) $('med-dtpag').value = p.dtpag || p.dt;
+  if ($('med-tot')) $('med-tot').value = p.tot;
+  if ($('med-st')) $('med-st').value = p.st;
+  openMod('med');
+}
+
+function savePedEdit() {
+  const id    = parseInt($('med-id')?.value);
+  const p     = DB.peds.find(x => x.id === id);
+  if (!p) return;
+  const cid   = parseInt($('med-c')?.value);
+  const pag   = $('med-pg')?.value;
+  const parc  = parseInt($('med-parc')?.value) || 1;
+  const dtpag = $('med-dtpag')?.value || p.dtpag;
+  const tot   = parseFloat($('med-tot')?.value) || p.tot;
+  const st    = $('med-st')?.value;
+  const pagLabel = parc > 1 ? `${pag} ${parc}×` : pag;
+  const oldCli = DB.clis.find(x => x.id === p.cid);
+  const newCli = DB.clis.find(x => x.id === cid);
+  if (p.cid !== cid) {
+    if (oldCli) { oldCli.gasto = Math.max(0, (oldCli.gasto || 0) - p.tot); sbSync(() => SBClis.update(p.cid, { gasto: oldCli.gasto })); }
+    if (newCli) { newCli.gasto = (newCli.gasto || 0) + tot; sbSync(() => SBClis.update(cid, { gasto: newCli.gasto })); }
+  } else if (oldCli && tot !== p.tot) {
+    oldCli.gasto = Math.max(0, (oldCli.gasto || 0) - p.tot + tot);
+    sbSync(() => SBClis.update(p.cid, { gasto: oldCli.gasto }));
+  }
+  const tr = DB.trans.find(t => t.ds === `Pedido #${id}`);
+  if (tr) { tr.vl = tot; tr.dt = dtpag; sbSync(() => SBTrans.upsert(tr)); }
+  Object.assign(p, { cid, pag: pagLabel, parc, dtpag, tot, st });
+  sbSync(() => SBPeds.upsert(p));
+  renderAll();
+  closeMod('med');
+  showToast('Pedido atualizado');
+}
+
+function askConfirm(msg, onYes) {
+  if ($('mconf-msg')) $('mconf-msg').textContent = msg;
+  const ok = $('mconf-ok');
+  if (ok) ok.onclick = () => { closeMod('mconf'); onYes(); };
+  openMod('mconf');
+}
+
+function confirmV() {
+  if (!_nvCart.length) { showToast('Adicione ao menos um produto'); return; }
+  const cid = parseInt($('vc')?.value);
+  const c = DB.clis.find(x => x.id === cid);
+  if (!c) { showToast('Selecione um cliente'); return; }
+  const tot = _nvCart.reduce((a, b) => a + b.sub, 0);
+  const resumo = _nvCart.length === 1 ? _nvCart[0].nm : `${_nvCart.length} produtos`;
+  askConfirm(`Registrar venda de ${brl(tot)} para ${c.nm}?\n\n${resumo}`, saveV);
+}
+
+function confirmMV() {
+  if (!_mvCart.length) { showToast('Adicione ao menos um produto'); return; }
+  const cid = parseInt($('mvc')?.value);
+  const c = DB.clis.find(x => x.id === cid);
+  if (!c) { showToast('Selecione um cliente'); return; }
+  const tot = _mvCart.reduce((a, b) => a + b.sub, 0);
+  const resumo = _mvCart.length === 1 ? _mvCart[0].nm : `${_mvCart.length} produtos`;
+  askConfirm(`Confirmar venda de ${brl(tot)} para ${c.nm}?\n\n${resumo}`, saveMV);
 }
 
 function saveTr() {

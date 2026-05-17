@@ -111,6 +111,27 @@ const SBTrans = {
   }
 };
 
+/* ── Solicitações ───────────────────────────────────── */
+const SBSolics = {
+  async list() {
+    const { data, error } = await _sbClient.from('solicitacoes').select('*').order('id');
+    if (error) throw error;
+    return data.map(_rowToSolic);
+  },
+  async upsert(s) {
+    const { error } = await _sbClient.from('solicitacoes').upsert(_solicToRow(s));
+    if (error) throw error;
+  },
+  async delete(id) {
+    const { error } = await _sbClient.from('solicitacoes').delete().eq('id', id);
+    if (error) throw error;
+  },
+  async updateStatus(id, st) {
+    const { error } = await _sbClient.from('solicitacoes').update({ st }).eq('id', id);
+    if (error) throw error;
+  }
+};
+
 /* ── Configurações ──────────────────────────────────── */
 const SBSettings = {
   async get() {
@@ -169,11 +190,25 @@ function _clientToRow(c) {
 }
 
 function _rowToOrder(r) {
-  return { id: r.id, cid: r.cid, prod: r.prod, q: r.q, tot: Number(r.tot), pag: r.pag, st: r.st, dt: r.dt };
+  return {
+    id: r.id, cid: r.cid, prod: r.prod, q: r.q,
+    tot: Number(r.tot), pag: r.pag,
+    parc: r.parc || 1,
+    dtpag: r.dtpag || r.dt,
+    itens: r.itens || null,
+    st: r.st, dt: r.dt
+  };
 }
 
 function _orderToRow(ped) {
-  return { id: ped.id, cid: ped.cid, prod: ped.prod, q: ped.q, tot: ped.tot, pag: ped.pag, st: ped.st, dt: ped.dt };
+  return {
+    id: ped.id, cid: ped.cid, prod: ped.prod, q: ped.q,
+    tot: ped.tot, pag: ped.pag,
+    parc: ped.parc || 1,
+    dtpag: ped.dtpag || ped.dt,
+    itens: ped.itens || null,
+    st: ped.st, dt: ped.dt
+  };
 }
 
 function _rowToTrans(r) {
@@ -182,4 +217,12 @@ function _rowToTrans(r) {
 
 function _transToRow(t) {
   return { id: t.id, tp: t.tp, ds: t.ds, vl: t.vl, dt: t.dt };
+}
+
+function _rowToSolic(r) {
+  return { id: r.id, nm: r.nm, q: r.q, pr: r.pr != null ? Number(r.pr) : null, obs: r.obs || '', st: r.st, dt: r.dt };
+}
+
+function _solicToRow(s) {
+  return { id: s.id, nm: s.nm, q: s.q, pr: s.pr ?? null, obs: s.obs || '', st: s.st, dt: s.dt };
 }

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Painel — Milena Lima Beauty</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=DM+Sans:wght@300;400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css">
   <style>
     /* ── Base ──────────────────────────────────── */
@@ -121,13 +121,11 @@
     .lsi { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #F4F4F5; font-size: 13px; }
 
     /* ── Modais dinâmicos ──────────────────────── */
-    @keyframes modalIn  { from { opacity:0 } to { opacity:1 } }
-    @keyframes modalOut { from { opacity:1 } to { opacity:0 } }
-
     .modal {
+      position: fixed; inset: 0; z-index: 1000;
       display: flex !important;
       align-items: center; justify-content: center;
-      padding: 24px;
+      padding: 16px;
       background: rgba(9,9,11,.52);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
@@ -143,34 +141,41 @@
       border-radius: 16px;
       width: 100%; max-width: 480px;
       box-shadow: 0 24px 64px rgba(0,0,0,.2), 0 0 0 1px rgba(0,0,0,.06);
-      max-height: 88vh; overflow-y: auto;
+      max-height: min(88svh, 88vh);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
       padding: 0;
-      transform: scale(.95) translateY(14px);
+      transform: scale(.97) translateY(10px);
       opacity: 0;
-      transition: transform .3s cubic-bezier(0.16,1,0.3,1), opacity .22s ease;
+      transition: transform .28s cubic-bezier(0.16,1,0.3,1), opacity .2s ease;
     }
     .modal.on .modal-box { transform: none; opacity: 1; }
     .modal-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 20px 22px 16px;
+      padding: 18px 20px 14px;
       border-bottom: 1px solid #F4F4F5;
       position: sticky; top: 0; background: #fff; z-index: 1;
       border-radius: 16px 16px 0 0;
     }
     .modal-header h3 { font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #18181B; margin: 0; letter-spacing: -.02em; }
     .modal-close {
-      width: 28px; height: 28px; border-radius: 7px;
+      width: 30px; height: 30px; border-radius: 8px;
       background: #F4F4F5; border: none; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       color: #71717A; font-size: 12px; transition: background .14s, color .14s;
+      flex-shrink: 0;
     }
     .modal-close:hover { background: #E4E4E7; color: #18181B; }
-    .modal .form-grid { padding: 20px 22px; gap: 14px; }
-    .modal-summary { margin: 0 22px 16px; background: #F4F5F7; border-radius: 10px; border: none; padding: 14px; }
+    .modal .form-grid { padding: 16px 20px; gap: 12px; }
+    .modal-summary { margin: 0 20px 14px; background: #F4F5F7; border-radius: 10px; border: none; padding: 14px; }
+    .modal-section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #A1A1AA; padding: 12px 20px 4px; display: block; }
     .modal-actions {
-      padding: 14px 22px 20px;
+      padding: 12px 20px 18px;
+      padding-bottom: max(18px, env(safe-area-inset-bottom));
       display: flex; gap: 8px; justify-content: flex-end;
       border-top: 1px solid #F4F4F5;
+      position: sticky; bottom: 0; background: #fff; z-index: 1;
     }
     #mp .modal-box { max-width: 560px; }
 
@@ -235,7 +240,6 @@
     .mv-prod-img { width: 42px; height: 42px; object-fit: cover; border-radius: 7px; flex-shrink: 0; }
     .mv-prod-nm { font-size: 13px; font-weight: 500; color: #18181B; }
     .mv-prod-pr { font-size: 12px; color: #71717A; margin-top: 2px; }
-    .modal-section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #A1A1AA; padding: 14px 22px 4px; display: block; }
 
     /* ── Cupom Fiscal ────────────────────────────────── */
     .cupom-box { max-width: 400px !important; background: #FDFCFB; padding: 0 !important; border-radius: 18px; overflow: hidden; }
@@ -320,10 +324,28 @@
       .form-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
       .form-grid .full { grid-column: 1 !important; }
       .modal { padding: 0; align-items: flex-end; }
-      .modal-box { border-radius: 20px 20px 0 0 !important; max-height: 90vh; max-width: 100% !important; transform: translateY(100%) !important; }
-      .modal.on .modal-box { transform: translateY(0) !important; }
-      .modal-actions { flex-direction: column-reverse; gap: 6px; }
-      .modal-actions .btn { width: 100%; padding: 12px; text-align: center; }
+      .modal-box {
+        border-radius: 22px 22px 0 0 !important;
+        max-height: min(92svh, 92vh) !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        transform: translateY(40px) !important;
+        opacity: 0;
+      }
+      .modal.on .modal-box { transform: translateY(0) !important; opacity: 1; }
+      .modal-header { border-radius: 22px 22px 0 0 !important; padding-top: 14px !important; }
+      .modal-header::before {
+        content: ''; display: block; width: 36px; height: 4px;
+        background: #D4D4D8; border-radius: 2px;
+        margin: 0 auto 14px;
+      }
+      .modal-actions {
+        flex-direction: column-reverse; gap: 8px;
+        padding-bottom: max(20px, env(safe-area-inset-bottom)) !important;
+      }
+      .modal-actions .btn { width: 100%; padding: 13px; text-align: center; font-size: 14px; }
+      .modal .form-grid { padding: 12px 16px !important; }
+      .modal-section-label { padding: 10px 16px 2px !important; }
       .summary-card { padding: 14px 12px; }
       .summary-value { font-size: 20px !important; }
       .page-header { flex-wrap: wrap; gap: 10px; }
@@ -351,9 +373,10 @@
         <div class="nav-group">Principal</div>
         <button class="nav-link on" onclick="epage('dashboard', this)"><span class="nav-icon">▦</span>Dashboard</button>
         <div class="nav-group">Vendas</div>
-        <button class="nav-link" onclick="epage('pedidos', this)"><span class="nav-icon">≡</span>Pedidos</button>
+        <button class="nav-link" onclick="epage('receber', this)"><span class="nav-icon">⬤</span>A Receber</button>
         <button class="nav-link" onclick="epage('nvenda', this)"><span class="nav-icon">✚</span>Nova Venda</button>
         <div class="nav-group">Gestão</div>
+        <button class="nav-link" onclick="epage('solicita', this)"><span class="nav-icon">≡</span>Solicitações</button>
         <button class="nav-link" onclick="epage('estoque', this)"><span class="nav-icon">◫</span>Estoque</button>
         <button class="nav-link" onclick="epage('clientes', this)"><span class="nav-icon">◎</span>Clientes</button>
         <button class="nav-link" onclick="epage('financeiro', this)"><span class="nav-icon">$</span>Financeiro</button>
@@ -389,24 +412,38 @@
             <article class="data-card chart-card"><div class="card-title">Vendas por categoria</div><div class="chart-shell"><canvas id="ch-cat"></canvas></div></article>
           </div>
           <div class="card-grid-wide">
-            <article class="data-card"><div class="card-header">Pedidos recentes <button class="btn btn-mini" onclick="epage('pedidos', null)">Ver todos</button></div><div id="dash-rec"></div></article>
+            <article class="data-card"><div class="card-header">Vendas recentes <button class="btn btn-mini" onclick="epage('receber', null)">A Receber</button></div><div id="dash-rec"></div></article>
             <article class="data-card"><div class="card-header">Estoque baixo <button class="btn btn-mini" onclick="epage('estoque', null)">Gerenciar</button></div><div id="dash-low"></div></article>
           </div>
         </section>
 
-        <section class="erp-page" id="ep-pedidos">
+        <section class="erp-page" id="ep-receber">
           <div class="page-header">
             <div>
-              <h2>Pedidos</h2>
-              <p class="page-subtitle">Gerencie todos os pedidos</p>
-            </div>
-            <div class="table-controls">
-              <input type="text" class="input-field small" placeholder="Buscar…" oninput="srch('ptt', this.value)">
-              <select class="input-field small" onchange="srchSt(this.value)"><option value="">Todos</option><option>Pendente</option><option>Confirmado</option><option>Enviado</option><option>Entregue</option></select>
-              <button class="btn btn-primary" onclick="openMod('mv')">+ Novo</button>
+              <h2>A Receber</h2>
+              <p class="page-subtitle">Vendas no fiado aguardando pagamento</p>
             </div>
           </div>
-          <div class="card data-card"><div class="table-shell"><table><thead><tr><th>#</th><th>Cliente</th><th>Data</th><th>Produto</th><th>Total</th><th>Pagamento</th><th>Data Pgto</th><th>Status</th></tr></thead><tbody id="ptt"></tbody></table></div></div>
+          <div class="dashboard-grid" style="margin-bottom:16px">
+            <article class="summary-card"><div>Total a receber</div><div class="summary-value" id="r-total">R$ 0,00</div><div class="summary-meta" style="color:#71717A">todas as vendas fiado</div></article>
+            <article class="summary-card"><div>Vencido</div><div class="summary-value" id="r-vencido" style="color:#DC2626">R$ 0,00</div><div class="summary-meta" style="color:#DC2626">prazo expirado</div></article>
+            <article class="summary-card"><div>Qtd. pendente</div><div class="summary-value" id="r-qtd">0</div><div class="summary-meta" style="color:#71717A">clientes com saldo</div></article>
+          </div>
+          <div class="card data-card"><div class="table-shell"><table><thead><tr><th>#</th><th>Cliente</th><th>WhatsApp</th><th>Produto</th><th>Total</th><th>Vencimento</th><th>Ações</th></tr></thead><tbody id="rbtt"></tbody></table></div></div>
+        </section>
+
+        <section class="erp-page" id="ep-solicita">
+          <div class="page-header">
+            <div>
+              <h2>Solicitações</h2>
+              <p class="page-subtitle">Produtos para pedir à Mary Kay</p>
+            </div>
+            <div class="table-controls">
+              <input type="text" class="input-field small" placeholder="Buscar…" oninput="srch('stt', this.value)">
+              <button class="btn btn-primary" onclick="openMod('msolic')">+ Solicitação</button>
+            </div>
+          </div>
+          <div class="card data-card"><div class="table-shell"><table><thead><tr><th>#</th><th>Produto</th><th>Qtd</th><th>Preço est.</th><th>Obs.</th><th>Data</th><th>Status / Ações</th></tr></thead><tbody id="stt"></tbody></table></div></div>
         </section>
 
         <section class="erp-page" id="ep-nvenda">
@@ -451,6 +488,7 @@
                   <button class="pay-chip" onclick="selPay(this,'Cartão de Crédito')" type="button">Crédito</button>
                   <button class="pay-chip" onclick="selPay(this,'Cartão de Débito')" type="button">Débito</button>
                   <button class="pay-chip" onclick="selPay(this,'Dinheiro')" type="button">Dinheiro</button>
+                  <button class="pay-chip" onclick="selPay(this,'Fiado')" type="button" style="border-color:#D97706;color:#D97706">Fiado</button>
                 </div>
                 <input type="hidden" id="vpg" value="PIX">
               </div>
@@ -478,7 +516,7 @@
                   <div class="nv-total-sub" id="vt-sub"></div>
                 </div>
               </div>
-              <button class="btn btn-primary btn-block" onclick="saveV()" type="button" style="font-size:14px;padding:14px">✓ Registrar venda</button>
+              <button class="btn btn-primary btn-block" onclick="confirmV()" type="button" style="font-size:14px;padding:14px">✓ Registrar venda</button>
             </article>
             <article class="data-card">
               <div class="card-title">Vendas de hoje</div>
@@ -504,9 +542,9 @@
               <h2>Clientes</h2>
               <p class="page-subtitle">Cadastro e histórico</p>
             </div>
-            <button class="btn btn-primary" onclick="openMod('mc')">+ Cliente</button>
+            <button class="btn btn-primary" onclick="newCli()">+ Cliente</button>
           </div>
-          <div class="card data-card"><div class="table-shell"><table><thead><tr><th>Nome</th><th>Telefone</th><th>E-mail</th><th>Cidade</th><th>Tipo de Pele</th><th>Total Gasto</th><th>Último Pedido</th></tr></thead><tbody id="ctt"></tbody></table></div></div>
+          <div class="card data-card"><div class="table-shell"><table><thead><tr><th>Nome</th><th>Telefone</th><th>E-mail</th><th>Cidade</th><th>Tipo de Pele</th><th>Total Gasto</th><th>Último Pedido</th><th>Ações</th></tr></thead><tbody id="ctt"></tbody></table></div></div>
         </section>
 
         <section class="erp-page" id="ep-financeiro">
@@ -646,6 +684,7 @@
           <button class="pay-chip" onclick="selMvPay(this,'Cartão de Crédito')" type="button">Crédito</button>
           <button class="pay-chip" onclick="selMvPay(this,'Cartão de Débito')" type="button">Débito</button>
           <button class="pay-chip" onclick="selMvPay(this,'Dinheiro')" type="button">Dinheiro</button>
+          <button class="pay-chip" onclick="selMvPay(this,'Fiado')" type="button" style="border-color:#D97706;color:#D97706">Fiado</button>
         </div>
         <input type="hidden" id="mvpg" value="PIX">
       </div>
@@ -667,7 +706,7 @@
       <label class="form-label full">Data de pagamento<input type="date" class="input-field" id="mvdtpag" style="margin-top:4px"></label>
     </div>
     <div class="summary-box modal-summary"><div class="summary-row"><span>Total</span><strong id="mvt">R$ 0,00</strong></div></div>
-    <div class="modal-actions"><button class="btn btn-outline" onclick="closeMod('mv')">Cancelar</button><button class="btn btn-primary" onclick="saveMV()">Confirmar venda</button></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeMod('mv')">Cancelar</button><button class="btn btn-primary" onclick="confirmMV()">Confirmar venda</button></div>
   </div></div>
 
   <div class="modal" id="mp"><div class="modal-box" style="max-width:560px">
@@ -697,7 +736,8 @@
   </div></div>
 
   <div class="modal" id="mc"><div class="modal-box">
-    <div class="modal-header"><h3>Novo Cliente</h3><button class="modal-close" onclick="closeMod('mc')">✕</button></div>
+    <div class="modal-header"><h3 id="mc-title">Novo Cliente</h3><button class="modal-close" onclick="closeMod('mc')">✕</button></div>
+    <input type="hidden" id="nc-id">
     <div class="form-grid">
       <label class="form-label full">Nome completo *<input type="text" class="input-field" id="nc-nm" placeholder="Nome da cliente" style="margin-top:4px"></label>
       <label class="form-label">WhatsApp<input type="tel" class="input-field" id="nc-tel" placeholder="(11) 99999-9999" style="margin-top:4px"></label>
@@ -707,7 +747,7 @@
       <label class="form-label">Aniversário<input type="date" class="input-field" id="nc-an" style="margin-top:4px"></label>
       <label class="form-label">Tipo de pele<select class="input-field" id="nc-pe" style="margin-top:4px"><option>Normal</option><option>Seca</option><option>Oleosa</option><option>Mista</option><option>Sensível</option></select></label>
     </div>
-    <div class="modal-actions"><button class="btn btn-outline" onclick="closeMod('mc')">Cancelar</button><button class="btn btn-primary" onclick="saveCli()">Cadastrar cliente</button></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeMod('mc')">Cancelar</button><button class="btn btn-primary" onclick="saveCli()" id="mc-save-btn">Cadastrar cliente</button></div>
   </div></div>
 
   <div class="modal" id="mt"><div class="modal-box">
@@ -739,6 +779,47 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal confirmação -->
+  <div class="modal" id="mconf"><div class="modal-box" style="max-width:380px">
+    <div class="modal-header"><h3>Confirmar</h3><button class="modal-close" onclick="closeMod('mconf')">✕</button></div>
+    <p id="mconf-msg" style="font-size:14px;color:#3f3f46;line-height:1.65;padding:16px 22px 4px;white-space:pre-line"></p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeMod('mconf')">Cancelar</button>
+      <button class="btn btn-primary" id="mconf-ok">Confirmar</button>
+    </div>
+  </div></div>
+
+  <!-- Modal editar pedido -->
+  <div class="modal" id="med"><div class="modal-box" style="max-width:440px">
+    <div class="modal-header"><h3>Editar Pedido</h3><button class="modal-close" onclick="closeMod('med')">✕</button></div>
+    <input type="hidden" id="med-id">
+    <div class="form-grid">
+      <label class="form-label full">Cliente<select class="input-field" id="med-c" style="margin-top:4px"></select></label>
+      <label class="form-label">Pagamento<select class="input-field" id="med-pg" style="margin-top:4px">
+        <option>PIX</option><option>Dinheiro</option><option>Cartão de Débito</option><option>Cartão de Crédito</option><option>Boleto</option><option>Fiado</option><option>Recebido</option>
+      </select></label>
+      <label class="form-label">Parcelas<input type="number" class="input-field" id="med-parc" min="1" max="12" value="1" style="margin-top:4px"></label>
+      <label class="form-label">Data de pagamento<input type="date" class="input-field" id="med-dtpag" style="margin-top:4px"></label>
+      <label class="form-label">Total (R$)<input type="number" class="input-field" id="med-tot" step="0.01" min="0" style="margin-top:4px"></label>
+      <label class="form-label">Status<select class="input-field" id="med-st" style="margin-top:4px">
+        <option>Pendente</option><option>Confirmado</option><option>Enviado</option><option>Entregue</option>
+      </select></label>
+    </div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeMod('med')">Cancelar</button><button class="btn btn-primary" onclick="savePedEdit()">Salvar alterações</button></div>
+  </div></div>
+
+  <!-- Modal nova solicitação -->
+  <div class="modal" id="msolic"><div class="modal-box" style="max-width:420px">
+    <div class="modal-header"><h3>Nova Solicitação</h3><button class="modal-close" onclick="closeMod('msolic')">✕</button></div>
+    <div class="form-grid">
+      <label class="form-label full">Produto *<input type="text" class="input-field" id="sl-nm" placeholder="Ex: Sérum Vitamina C FPS 30" style="margin-top:4px"></label>
+      <label class="form-label">Quantidade<input type="number" class="input-field" id="sl-q" value="1" min="1" style="margin-top:4px"></label>
+      <label class="form-label">Preço estimado (R$)<input type="number" class="input-field" id="sl-pr" step="0.01" placeholder="Opcional" style="margin-top:4px"></label>
+      <label class="form-label full">Observações<input type="text" class="input-field" id="sl-obs" placeholder="Ex: cor, tamanho, código Mary Kay…" style="margin-top:4px"></label>
+    </div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeMod('msolic')">Cancelar</button><button class="btn btn-primary" onclick="saveSolic()">Criar solicitação</button></div>
+  </div></div>
 
   <script src="./app.js" defer></script>
   <a href="grupolima.html" class="gl-badge">
