@@ -152,6 +152,7 @@ function rProds(cat) {
         ${p.st > 0 && p.st <= 3 ? `<div class="pstock-pill">Só ${p.st} restantes</div>` : ''}
         ${p.st === 0 ? `<div class="pstock-pill pstock-out">Esgotado</div>` : ''}
         <div class="pcard-overlay">
+          ${p.desc ? `<p class="pcard-overlay-desc">${p.desc}</p>` : ''}
           <button class="pcard-add" onclick="event.stopPropagation(); addC(${p.id})" ${p.st === 0 ? 'disabled' : ''}>${p.st === 0 ? 'Esgotado' : 'Adicionar'}</button>
         </div>
       </div>
@@ -344,6 +345,7 @@ function rFeaturedProds() {
         ${p.dt ? `<div class="pbadge ${p.dt === 'new' ? 'b-new' : 'b-sale'}">${p.dt === 'new' ? 'Novo' : 'Promo'}</div>` : ''}
         ${p.st > 0 && p.st <= 3 ? `<div class="pstock-pill">Só ${p.st} restantes</div>` : ''}
         <div class="pcard-overlay">
+          ${p.desc ? `<p class="pcard-overlay-desc">${p.desc}</p>` : ''}
           <button class="pcard-add" onclick="event.stopPropagation(); addC(${p.id})">Adicionar</button>
         </div>
       </div>
